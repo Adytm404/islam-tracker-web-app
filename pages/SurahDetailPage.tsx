@@ -12,6 +12,7 @@ interface Ayah {
   ar: string;
   tr: string;
   idn: string;
+  audio: string;
 }
 
 interface SurahDetail {
@@ -50,21 +51,39 @@ const SurahDetailPage: React.FC = () => {
       const currentNomor = parseInt(nomor);
       
       Promise.all([
-        fetch(`https://quran-api.santrikoding.com/api/surah/${nomor}`).then(res => res.json()),
-        isSurahFavorite(currentNomor),
-        // Fetch all surahs to find next surah name
-        currentNomor < 114 
-          ? fetch('https://quran-api.santrikoding.com/api/surah').then(res => res.json())
-          : Promise.resolve(null)
+        fetch(`https://equran.id/api/v2/surat/${nomor}`).then(res => res.json()),
+        isSurahFavorite(currentNomor)
       ])
-        .then(([data, favStatus, allSurahs]) => {
-          setSurah(data);
-          setIsFavorite(favStatus);
-          
-          if (allSurahs) {
-            const next = allSurahs.find((s: any) => s.nomor === currentNomor + 1);
-            if (next) setNextSurahName(next.nama_latin);
+        .then(([json, favStatus]) => {
+          const item = json.data;
+          if (item) {
+            const formattedSurah: SurahDetail = {
+              nomor: item.nomor,
+              nama: item.nama,
+              nama_latin: item.namaLatin,
+              jumlah_ayat: item.jumlahAyat,
+              arti: item.arti,
+              tempat_turun: item.tempatTurun,
+              deskripsi: item.deskripsi,
+              audio: item.audioFull?.['05'] || item.audioFull?.['01'] || '',
+              ayat: (item.ayat || []).map((a: any) => ({
+                id: a.nomorAyat,
+                nomor: a.nomorAyat,
+                ar: a.teksArab,
+                tr: a.teksLatin,
+                idn: a.teksIndonesia,
+                audio: a.audio?.['05'] || a.audio?.['01'] || ''
+              }))
+            };
+            setSurah(formattedSurah);
+
+            if (item.suratSelanjutnya && typeof item.suratSelanjutnya === 'object') {
+              setNextSurahName(item.suratSelanjutnya.namaLatin || '');
+            } else {
+              setNextSurahName('');
+            }
           }
+          setIsFavorite(favStatus);
           
           setLoading(false);
           
@@ -148,9 +167,11 @@ const SurahDetailPage: React.FC = () => {
 
   const playAyahAudio = (ayahNomor: number) => {
     setAudioError(null);
+    const targetAyahObj = surah?.ayat.find(a => a.nomor === ayahNomor);
     const sId = String(surah?.nomor).padStart(3, '0');
     const aId = String(ayahNomor).padStart(3, '0');
-    const audioUrl = `https://www.everyayah.com/data/Alafasy_128kbps/${sId}${aId}.mp3`;
+    const fallbackAudioUrl = `https://www.everyayah.com/data/Alafasy_128kbps/${sId}${aId}.mp3`;
+    const audioUrl = targetAyahObj?.audio || fallbackAudioUrl;
 
     if (playingAyah === ayahNomor) {
       audioRef.current?.pause();
@@ -165,14 +186,22 @@ const SurahDetailPage: React.FC = () => {
       setPlayingAyah(ayahNomor);
       
       newAudio.play().catch(() => {
-        setPlayingAyah(null);
-        setAudioError("Audio tidak dapat diputar.");
+        const fallbackAudio = new Audio(fallbackAudioUrl);
+        audioRef.current = fallbackAudio;
+        fallbackAudio.play().catch(() => {
+          setPlayingAyah(null);
+          setAudioError("Audio tidak dapat diputar.");
+        });
       });
       
       newAudio.onended = () => setPlayingAyah(null);
       newAudio.onerror = () => {
-        setPlayingAyah(null);
-        setAudioError("Sumber audio tidak ditemukan.");
+        const fallbackAudio = new Audio(fallbackAudioUrl);
+        audioRef.current = fallbackAudio;
+        fallbackAudio.play().catch(() => {
+          setPlayingAyah(null);
+          setAudioError("Sumber audio tidak ditemukan.");
+        });
       };
     }
   };

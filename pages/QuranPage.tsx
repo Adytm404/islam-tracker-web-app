@@ -32,8 +32,18 @@ const QuranPage: React.FC = () => {
     const loadData = async () => {
       setLoading(true);
       try {
-        const res = await fetch('https://quran-api.santrikoding.com/api/surah');
-        const data = await res.json();
+        const res = await fetch('https://equran.id/api/v2/surat');
+        const json = await res.json();
+        const data = (json.data || []).map((item: any) => ({
+          nomor: item.nomor,
+          nama: item.nama,
+          nama_latin: item.namaLatin,
+          jumlah_ayat: item.jumlahAyat,
+          tempat_turun: item.tempatTurun,
+          arti: item.arti,
+          deskripsi: item.deskripsi,
+          audio: item.audioFull?.['05'] || item.audioFull?.['01'] || ''
+        }));
         setSurahs(data);
         
         const favs = await getFavoriteSurahs();
