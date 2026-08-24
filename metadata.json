@@ -1,0 +1,7 @@
+{
+  "name": "Islam Tracker",
+  "description": "A comprehensive Islamic companion app for fasting tracking, prayer times, Quran reading, and Qibla direction, designed with a modern mobile-first aesthetic.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
