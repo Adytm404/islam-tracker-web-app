@@ -1,5 +1,7 @@
 # Islam Tracker Web App
 
+![Preview](https://img.lightshot.app/Hs1z5sHySW6NtqSkJOpMPA.png)
+
 Aplikasi web pelacak ibadah harian Muslim yang dibangun menggunakan React, TypeScript, dan Vite. Aplikasi menyimpan data lokal di browser menggunakan IndexedDB.
 
 ## Fitur Utama
